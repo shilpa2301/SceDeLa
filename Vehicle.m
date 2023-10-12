@@ -40,7 +40,7 @@ classdef Vehicle
             border_1=border_total(1:first_border_end, :);
             border_2=flip(border_total(second_border_start:length(border_total), :));
             
-           
+       end   
         
        function dist=dist_func(veh_obj, x1,y1, x2,y2)
             dist=sqrt((x1-x2)^2 + (y1-y2)^2);
@@ -165,7 +165,7 @@ classdef Vehicle
 
        end
 
-       function waypoints_total=bicycle_model_with_road_constraints_3(veh_obj, scenario)
+       function waypoints_total=sampled_scenario(veh_obj, scenario)
            centers = scenario.RoadSpecifications.Centers;
            new_scenario_obj = drivingScenario('VerticalAxis', 'Y');
            laneSpecification = lanespec([1 1]);
@@ -331,7 +331,7 @@ classdef Vehicle
            road(new_scenario_obj, scenario.RoadSpecifications.Centers, 'Lanes', laneSpecification, 'Name', 'Apple Hill Drive');
            rbScenario = roadBoundaries(new_scenario_obj);
 
-           waypoints_total=bicycle_model_with_road_constraints_3(veh_obj, scenario);
+           waypoints_total=sampled_scenario(veh_obj, scenario);
           speed_total = ones(1, length(waypoints_total))*30;
 
           while veh_obj.iteration<length(waypoints_total)-1
