@@ -49,7 +49,7 @@ classdef Vehicle
        function [min_node_id, min_dist]=find_nearest_node_in_tree(veh_obj, valid_nodes_list, x2, y2)
             min_dist=Inf;
             min_node_id=-1;
-            for i = 1: height(valid_nodes_list)
+            for i = 1: width(valid_nodes_list)
                 node=valid_nodes_list(i);
                 %node_y=valid_nodes_list(i,2);
                 dist=dist_func(veh_obj, node{1}(1), node{1}(2), x2, y2);
@@ -106,26 +106,26 @@ classdef Vehicle
         
        %remember to do for only 1 last block, not 2 blocks which is done in
        %general
-       function [validity_flag, distance_from_block_end]=find_if_node_inside_any_road_block(veh_obj, current_road_blocks, target_x, target_y, border_1, border_2)
+       function [validity_flag, distance_from_block_end]=find_if_node_inside_any_road_block(veh_obj, current_road_blocks, target_x, target_y, border_1, border_2,block_threshold)
             validity_flag=false;
-            distance_rom_block_end=-1;
-
-            for current_road_block=1:current_road_blocks+2
+            %distance_rom_block_end=-1;
+            %current_road_block= current_road_blocks;
+            for current_road_block=1:current_road_blocks
             
                     left_bottom_x=border_1(current_road_block,1);
                     left_bottom_y=border_1(current_road_block,2);
                     left_top_x   =border_2(current_road_block,1);
                     left_top_y   =border_2(current_road_block,2);
-                    right_bottom_x=border_1(current_road_block,1);
-                    right_bottom_y=border_1(current_road_block,2);
-                    right_top_x   =border_2(current_road_block,1);
-                    right_top_y   =border_2(current_road_block,2);
+                    right_bottom_x=border_1(current_road_block+block_threshold,1);
+                    right_bottom_y=border_1(current_road_block+block_threshold,2);
+                    right_top_x   =border_2(current_road_block+block_threshold,1);
+                    right_top_y   =border_2(current_road_block+block_threshold,2);
                     
                    
         
                     distance_from_block_end=-1;
         
-                    if inpolygon(target_x,target_y,[left_bottom_x right_bottom_x+2 right_top_x+2 left_top_x], ...
+                    if inpolygon(target_x,target_y,[left_bottom_x right_bottom_x right_top_x left_top_x], ...
                             [left_bottom_y right_bottom_y right_top_y left_top_y])
                         validity_flag=1;
         
@@ -135,12 +135,15 @@ classdef Vehicle
                         v2=[right_top_x right_top_y];
                         if current_road_block == current_road_blocks
                             distance_from_block_end = point_to_line(veh_obj, pt, v1, v2);
+
                         end
                         break
         
                     end
             end
 %
+       
+       end
             %if ((target_x>=left_bottom_x && target_x<=left_top_x) ...
             %        ||(target_x<=left_bottom_x && target_x>=left_top_x)) && ...
             %    ((target_x>=right_bottom_x && target_x<=right_top_x) ...
@@ -148,18 +151,17 @@ classdef Vehicle
             %        ((target_y>=left_bottom_y && target_y<=left_top_y) ...
             %        ||(target_y<=left_bottom_y && target_y>=left_top_y)) && ...
             %            ((target_y>=right_bottom_y && target_y<=left_top_y) ...
-            %            ||(target_y<=left_bottom_y && target_y>=left_top_y))
-       end
 
-       function [validity_flag, current_road_block]=find_if_target_node_valid(veh_obj, dist_from_block_end, current_road_block, target_x, target_y, border_1, border_2)
+       function [validity_flag, current_road_block,distance_rom_block_end]=find_if_target_node_valid(veh_obj, dist_from_block_end, current_road_block, target_x, target_y, border_1, border_2,block_threshold)
 
             validity_flag=false;
             if current_road_block+2<length(border_1)
-                    [validity_flag, distance_rom_block_end]=find_if_node_inside_any_road_block(veh_obj, current_road_block, target_x, target_y, border_1, border_2);
+                    [validity_flag, distance_rom_block_end]=find_if_node_inside_any_road_block(veh_obj, current_road_block, target_x, target_y, border_1, border_2,block_threshold);
             end
 
             if distance_rom_block_end<=dist_from_block_end && distance_rom_block_end ~= -1%0.5=threshold from road block boundary to end
-                current_road_block=current_road_block+1;
+                current_road_block=current_road_block+block_threshold;
+                disp("Road_block_proceeded")
             end
 
 
@@ -184,14 +186,15 @@ classdef Vehicle
            border_2=flip(border_total(second_border_start:length(border_total)-1, :));
             
            dist_from_block_end=1.0;
-           dist_of_new_node=4.0;
+           dist_of_new_node=3.0;
            current_road_block=1;
            tree=dictionary;
-           valid_nodes={[-156.0 -28.2]};
+           valid_nodes={[-160 -28.2]};
            flag_distant_from_other_points = 0;
            threshold_dist_from_other_points = 0.7;
+           block_threshold = 4;
 
-           while current_road_block<length(border_1)-2
+           while current_road_block<length(border_1)-block_threshold
                disp(current_road_block);
                %sample a
                sampled_x=-240+ ((-40)-(-240))*rand; %((-300)+rand*(300-(-300)));
@@ -255,8 +258,9 @@ classdef Vehicle
                                    %if target point inside road -> this is the next
                                     %waypoint
                                     %else discard this point and sample again
-                                    [validity_flag, current_road_block]=find_if_target_node_valid(veh_obj, dist_from_block_end, current_road_block, target_x, target_y, border_1, border_2);
+                                    [validity_flag, current_road_block, calc_dist_from_block]=find_if_target_node_valid(veh_obj, dist_from_block_end, current_road_block, target_x, target_y, border_1, border_2,block_threshold);
                                     if validity_flag == true
+                                        disp("New point found")
                                         valid_nodes{end+1} = [target_x target_y];
                                         tree(nearest_node_id) = length(valid_nodes);
     
