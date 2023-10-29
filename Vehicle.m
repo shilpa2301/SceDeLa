@@ -476,9 +476,8 @@ classdef Vehicle
 
        end
 
-       function tree_path = find_path(veh_obj,scenario)
-            tree = load ("RRT_2_tree.mat").tree;
-            tree_nodes = load("RRT_2_nodes.mat").valid_nodes;
+       function waypoint_idx = find_path(veh_obj,scenario, tree, tree_nodes)
+            
 
             %get maximum calculated block while generating tree
             max_block =0;
@@ -585,8 +584,22 @@ classdef Vehicle
            road(new_scenario_obj, scenario.RoadSpecifications.Centers, 'Lanes', laneSpecification, 'Name', 'Apple Hill Drive');
            rbScenario = roadBoundaries(new_scenario_obj);
 
-           [tree, valid_nodes]=sampled_scenario(veh_obj, scenario);
-           tree_path = find_path(veh_obj, scenario);
+           %[tree, valid_nodes]=sampled_scenario(veh_obj, scenario);
+
+           tree = load ("RRT_3_tree.mat").tree;
+           tree_nodes = load("RRT_3_nodes.mat").valid_nodes;
+           waypoint_idx = find_path(veh_obj, scenario, tree, tree_nodes);
+           waypoint_idx=flip(waypoint_idx);
+
+           for ii=1:length(waypoint_idx)
+                veh_obj.iteration = ii;
+                x=tree_nodes{waypoint_idx(ii)}(1);
+                y=tree_nodes{waypoint_idx(ii)}(2);
+                veh_obj.waypoints=[veh_obj.waypoints; [x y]];
+                veh_obj.speed=[veh_obj.speed; 30];
+           end
+
+           
     
            %need to enable later to visualize scenario
           %speed_total = ones(1, length(waypoints_total))*30;
