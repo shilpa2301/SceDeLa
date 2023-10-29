@@ -490,17 +490,18 @@ classdef Vehicle
             end
 
             %generate adjacency list
-            tree_adj_list ={};
-            for i = 1: length(tree)
+            tree_adj_list ={[-1]};
+            for i = 1: height(tree)
                 edge = tree(i,:);
                 parent =edge(1);
                 child = edge(2);
-                if length(tree_adj_list)<parent
-                    tree_adj_list{end+1} = [child];
-                else
-                    tree_adj_list{parent}=[tree_adj_list{parent}; [child]];
-
+                tree_adj_list{parent}=[tree_adj_list{parent}; [child]];
+                if length(tree_adj_list)<child
+                    tree_adj_list{end+1} = [-1];
                 end
+                    
+
+                %end
             end
             
             %store parent child in dict
@@ -511,7 +512,9 @@ classdef Vehicle
             for i=1:length(tree_adj_list)
                 children = tree_adj_list{i};
                 for j =1:length(children)
-                    parent_dict(children(j)) = i;
+                    if children(j) ~= -1
+                        parent_dict(children(j)) = i;
+                    end
                 end
             end
             %    queue = [queue; children];
@@ -531,14 +534,14 @@ classdef Vehicle
                 waypoint_idx=[waypoint_idx; parent_node];
                 parent_node = parent_dict(parent_node);
             end
-
+            waypoint_idx=flip(waypoint_idx);
             
             %visualization
             node_x=[];
             node_y=[];
             for i = 1: length(waypoint_idx)
-                node_x=[node_x; tree_nodes{i}(1)]
-                node_y=[node_y; tree_nodes{i}(2)]
+                node_x=[node_x; tree_nodes{waypoint_idx(i)}(1)]
+                node_y=[node_y; tree_nodes{waypoint_idx(i)}(2)]
             end
 
             centers = scenario.RoadSpecifications.Centers;
@@ -558,6 +561,17 @@ classdef Vehicle
             border_1=border_total(2:first_border_end, :);
             border_2=flip(border_total(second_border_start:length(border_total)-1, :));
 
+            new_border_1=[];
+            new_border_2=[];
+            for bd = 1:length(border_1)
+                 if mod(bd,3) == 0
+                     new_border_1=[new_border_1; border_1(bd,:)];
+                     new_border_2=[new_border_2; border_2(bd,:)];
+                 end
+            end
+            border_1=new_border_1;
+            border_2=new_border_2;
+
             scatter(border_1(:,1), border_1(:,2), 'red', "filled");
             hold on 
             scatter(border_2(:,1), border_2(:,2), 'red', "filled");
@@ -567,7 +581,7 @@ classdef Vehicle
             close
             
 
-            pi=2;
+            %pi=2;
 
 
        end
@@ -589,14 +603,14 @@ classdef Vehicle
            tree = load ("RRT_3_tree.mat").tree;
            tree_nodes = load("RRT_3_nodes.mat").valid_nodes;
            waypoint_idx = find_path(veh_obj, scenario, tree, tree_nodes);
-           waypoint_idx=flip(waypoint_idx);
+           
 
            for ii=1:length(waypoint_idx)
                 veh_obj.iteration = ii;
                 x=tree_nodes{waypoint_idx(ii)}(1);
                 y=tree_nodes{waypoint_idx(ii)}(2);
                 veh_obj.waypoints=[veh_obj.waypoints; [x y]];
-                veh_obj.speed=[veh_obj.speed; 30];
+                veh_obj.speed=[veh_obj.speed; 50];
            end
 
            
