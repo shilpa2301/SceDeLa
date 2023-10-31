@@ -211,7 +211,7 @@ classdef Vehicle
 
        end
 
-       function [tree, valid_nodes]=sampled_scenario(veh_obj, scenario)
+       function [tree, valid_nodes]=sampled_scenario(veh_obj, scenario, veh_id)
 
            global last_road_block;
            last_road_block = 0;
@@ -242,25 +242,43 @@ classdef Vehicle
            end
            border_1=new_border_1;
            border_2=new_border_2;
-            
+           
+           %multi_Agent
+           if veh_id ==1
+            centre_line=(new_border_1 + new_border_2)/2.0;
+            outer_border=border_2;
+            border_2 = centre_line;
+           else
+            centre_line=(new_border_1 + new_border_2)/2.0;
+            outer_border=border_1;
+            border_1 = centre_line;
+
+           end
+
            %dist_from_block_end=1.0;
            dist_of_new_node=3.0; %3.0;
            %current_road_block=1;
            %tree=dictionary;
            tree = [];
-           valid_nodes={[-160 -28.2 1.05 0.01 1]}; % [x y heading steering_angle blockid] and -pi/5 = -0.63 = 36 degrees % 60 degrees = 1.05
+           %multi_Agent
+           if veh_id ==1
+            valid_nodes={[-160 -28.2 1.05 0.01 1]}; % [x y heading steering_angle blockid] and -pi/5 = -0.63 = 36 degrees % 60 degrees = 1.05
+           else
+            valid_nodes={[-157 -31.5 1.00 0.01 1]};
+           end
            flag_distant_from_other_points = 0;
            threshold_dist_from_other_points = 1.0;%1.0;%1.0;
            block_threshold = 1;%6; %with dist = 1.0, this val = 6
-           knn=1;
+           knn=5;
            velocity_change_threshold = 2.7; % 10km/hr per frame
            steer_angle_rate_change_threshold = 1.0; % 0.5 radian = 30 degrees % 0.17; %10 degrees in radians
-           init_velocity = 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 km/hr
+           init_velocity = 0.2;% working 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 km/hr
            init_steer_angle_rate = 0.0; % driving straight
            L=0.5;
            delta_t=3.0;
 
            corresp_road_block = 1;
+           
 
            while last_road_block<length(border_1)-block_threshold
                %disp(current_road_block);
@@ -464,19 +482,22 @@ classdef Vehicle
            hold on 
            scatter(border_2(:,1), border_2(:,2), 'red', "filled");
            hold on
+           %lane1
+           scatter(outer_border(:,1), outer_border(:,2), 'red', "filled");
+           hold on
            scatter(node_x, node_y, 'blue', "filled");
            close
 
            
 
-           pi=2;
+           %pi=2;
            
 
 
 
        end
 
-       function waypoint_idx = find_path(veh_obj,scenario, tree, tree_nodes)
+       function waypoint_idx = find_path(veh_obj,scenario, tree, tree_nodes, veh_id)
             
 
             %get maximum calculated block while generating tree
@@ -571,10 +592,31 @@ classdef Vehicle
             end
             border_1=new_border_1;
             border_2=new_border_2;
+            
+            %lane1
+            %centre_line=(new_border_1 + new_border_2)/2.0;
+            %outer_border=border_2;
+            %border_2 = centre_line;
+
+            %multi_Agent
+            if veh_id ==1
+             centre_line=(new_border_1 + new_border_2)/2.0;
+             outer_border=border_2;
+             border_2 = centre_line;
+            else
+             centre_line=(new_border_1 + new_border_2)/2.0;
+             outer_border=border_1;
+             border_1 = centre_line;
+    
+            end
+
 
             scatter(border_1(:,1), border_1(:,2), 'red', "filled");
             hold on 
             scatter(border_2(:,1), border_2(:,2), 'red', "filled");
+            hold on
+            %lane1
+            scatter(outer_border(:,1), outer_border(:,2), 'red', "filled");
             hold on
             scatter(node_x, node_y, 'blue', "filled");
             %saveas(gcf,'imgs/trial/'+string(length(valid_nodes)) + '.png')
@@ -590,7 +632,7 @@ classdef Vehicle
 
      
 
-       function veh_obj=vehicle_movement(veh_obj, scenario)%iteration, waypoints, speed)
+       function veh_obj=vehicle_movement(veh_obj, scenario, veh_id)%iteration, waypoints, speed)
 
            %rbScenario = roadBoundaries();
            new_scenario_obj = drivingScenario('VerticalAxis', 'Y');
@@ -598,11 +640,15 @@ classdef Vehicle
            road(new_scenario_obj, scenario.RoadSpecifications.Centers, 'Lanes', laneSpecification, 'Name', 'Apple Hill Drive');
            rbScenario = roadBoundaries(new_scenario_obj);
 
-           %[tree, valid_nodes]=sampled_scenario(veh_obj, scenario);
-
-           tree = load ("RRT_3_tree.mat").tree;
-           tree_nodes = load("RRT_3_nodes.mat").valid_nodes;
-           waypoint_idx = find_path(veh_obj, scenario, tree, tree_nodes);
+           %[tree, tree_nodes]=sampled_scenario(veh_obj, scenario, veh_id);
+           if veh_id ==1
+                tree = load ("RRT_6_tree_veh1.mat").tree;
+                tree_nodes = load("RRT_6_nodes_veh1.mat").valid_nodes;
+           else
+                tree = load ("RRT_6_tree_veh2.mat").tree;
+                tree_nodes = load("RRT_6_nodes_veh2.mat").valid_nodes;
+           end
+           waypoint_idx = find_path(veh_obj, scenario, tree, tree_nodes, veh_id);
            
 
            for ii=1:length(waypoint_idx)
