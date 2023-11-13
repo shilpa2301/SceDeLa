@@ -170,31 +170,34 @@ classdef Vehicle
                     %right_top_x   =border_2(end_check,1);
                     %right_top_y   =border_2(end_check,2);
 
-                    right_bottom_x=border_1(current_road_block+1,1);
-                    right_bottom_y=border_1(current_road_block+1,2);
-                    right_top_x   =border_2(current_road_block+1,1);
-                    right_top_y   =border_2(current_road_block+1,2);
+                    if current_road_block+1 <=length(border_1)
+
+                        right_bottom_x=border_1(current_road_block+1,1);
+                        right_bottom_y=border_1(current_road_block+1,2);
+                        right_top_x   =border_2(current_road_block+1,1);
+                        right_top_y   =border_2(current_road_block+1,2);
+                        
                     
-                   
-        
-                    %distance_from_block_end=-1;
-                    corresp_road_block = -1;
-        
-                    if inpolygon(target_x,target_y,[left_bottom_x right_bottom_x right_top_x left_top_x], ...
-                            [left_bottom_y right_bottom_y right_top_y left_top_y])
-                        validity_flag=1;
-        
-                        %calculate distance from block end
-                        pt=[target_x target_y];
-                        v1=[right_bottom_x right_bottom_y];
-                        v2=[right_top_x right_top_y];
-                        %if current_road_block== start_block
-                        corresp_road_block = current_road_block;
-                        %else
-                         %   corresp_road_block = end_check;
-                        %end
-                        break
-        
+            
+                        %distance_from_block_end=-1;
+                        corresp_road_block = -1;
+            
+                        if inpolygon(target_x,target_y,[left_bottom_x right_bottom_x right_top_x left_top_x], ...
+                                [left_bottom_y right_bottom_y right_top_y left_top_y])
+                            validity_flag=1;
+            
+                            %calculate distance from block end
+                            pt=[target_x target_y];
+                            v1=[right_bottom_x right_bottom_y];
+                            v2=[right_top_x right_top_y];
+                            %if current_road_block== start_block
+                            corresp_road_block = current_road_block;
+                            %else
+                             %   corresp_road_block = end_check;
+                            %end
+                            break
+            
+                        end
                     end
             end
 %
@@ -209,12 +212,20 @@ classdef Vehicle
             [validity_flag,corresp_road_block ]=find_if_node_inside_any_road_block(veh_obj, target_x, target_y, border_1, border_2,block_threshold, nearest_node_block_id);
             
 
-       end
+            end
 
-       function [tree, valid_nodes]=sampled_scenario(veh_obj, scenario, veh_id)
+            function [valid_nodes, tree] = function_sample(veh_obj,border_1, border_2,p, num_paths)
+                disp("inside "+ string(p))
+                %global last_road_block;
+               
 
-           global last_road_block;
-           last_road_block = 0;
+
+
+            end
+
+       function [tree, valid_nodes]=sampled_scenario(veh_obj, scenario, veh_id, num_paths)
+
+           
            centers = scenario.RoadSpecifications.Centers;
            new_scenario_obj = drivingScenario('VerticalAxis', 'Y');
            laneSpecification = lanespec([1 1]);
@@ -235,7 +246,7 @@ classdef Vehicle
            new_border_1=[];
            new_border_2=[];
            for bd = 1:length(border_1)
-                if mod(bd,3) == 0
+                if mod(bd,2) == 0
                     new_border_1=[new_border_1; border_1(bd,:)];
                     new_border_2=[new_border_2; border_2(bd,:)];
                 end
@@ -244,259 +255,382 @@ classdef Vehicle
            border_2=new_border_2;
            
            %multi_Agent
-           if veh_id ==1
-            centre_line=(new_border_1 + new_border_2)/2.0;
-            outer_border=border_2;
-            border_2 = centre_line;
-           else
-            centre_line=(new_border_1 + new_border_2)/2.0;
-            outer_border=border_1;
-            border_1 = centre_line;
 
-           end
+           %inputs=1:num_paths;
+           results = cell(1, num_paths);
 
-           %dist_from_block_end=1.0;
-           dist_of_new_node=3.0; %3.0;
-           %current_road_block=1;
-           %tree=dictionary;
-           tree = [];
-           %multi_Agent
-           if veh_id ==1
-            valid_nodes={[-160 -28.2 1.05 0.01 1]}; % [x y heading steering_angle blockid] and -pi/5 = -0.63 = 36 degrees % 60 degrees = 1.05
-           else
-            valid_nodes={[-157 -31.5 1.00 0.01 1]};
-           end
-           flag_distant_from_other_points = 0;
-           threshold_dist_from_other_points = 1.0;%1.0;%1.0;
-           block_threshold = 1;%6; %with dist = 1.0, this val = 6
-           knn=5;
-           velocity_change_threshold = 2.7; % 10km/hr per frame
-           steer_angle_rate_change_threshold = 1.0; % 0.5 radian = 30 degrees % 0.17; %10 degrees in radians
-           init_velocity = 0.2;% working 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 km/hr
-           init_steer_angle_rate = 0.0; % driving straight
-           L=0.5;
-           delta_t=3.0;
-
-           corresp_road_block = 1;
            
-
-           while last_road_block<length(border_1)-block_threshold
-               %disp(current_road_block);
-               %sample a
-                sampled_x=-240+ ((-40)-(-240))*rand; %((-300)+rand*(300-(-300)));
-                sampled_y=-90 + ((-20)-(-90))*rand; %((-300)+rand*(300-(-300));
-               
-               
-               
-               %Find if the point's distance id < delta_distance=1.0
-                        [nearest_node_list, dist_list] = find_k_nearest_node_in_tree(veh_obj, valid_nodes, sampled_x, sampled_y,knn);
-                        %[nearest_node_id, dist_from_curr_state]=find_nearest_node_in_tree(veh_obj, valid_nodes, sampled_x, sampled_y);
-                        for nn = 1:length(nearest_node_list)
-                        %dist_from_curr_state=dist_func(veh_obj, state(end,1), state(end,2), sampled_x, sampled_y);
-                            nearest_node_id = nearest_node_list(nn);
-                            dist_from_curr_state = dist_list(nn);
-                            disp(["checking with nearest neighbor",num2str(nn)])
-                            %if yes -> this is the next way point
-                            %if dist_from_curr_state<=dist_of_new_node %1.5=theshold distance to create node
-                            %    %do nothing
-%
-                            %    %target_x = sampled_x;
-                            %    %target_y= sampled_y;
-    %%
-                            %    %%shilpa- fix to get whole row
-                            %    %start_node = valid_nodes(nearest_node_id);
-                            %
-                            %% if no, find target point connecting the current
-                            %% state and sampled state
-                            %else
-                                start_node = valid_nodes(nearest_node_id);
-                                [target_x,target_y] = find_target_point(veh_obj, start_node{end}(1), start_node{end}(2), sampled_x, sampled_y,dist_of_new_node);
-                                target_x=double(target_x);
-                                target_y=double(target_y);
-    
-                                if (target_x ~= -1) || (target_y ~= -1)
-
-                                    %sampled points and bicycle model
-                                    sampled_steering_angle_rate_changed = zeros(1,10);
-                                    sampled_velocity_change = zeros(1,10);
-                                    for ss = 1:10
-                                    sampled_steering_angle_rate_changed(ss)=((-1)*steer_angle_rate_change_threshold)+ (steer_angle_rate_change_threshold-((-1)*steer_angle_rate_change_threshold))*rand; % 30 degrees
-                                    sampled_velocity_change(ss)=((-1)*velocity_change_threshold) + (velocity_change_threshold-((-1)*velocity_change_threshold))*rand; %10 km/hr change
-                                    end
-
-                                    %calculating current inputs to model
-                                    %based on change
-                                    states = zeros(100,4);
-                                    itss=1;
-                                    for ang_ch = 1:10
-                                        for vel_ch = 1:10
-                                            input_velocity = init_velocity + sampled_velocity_change(vel_ch);
-                                            input_steer_angle_rate = init_steer_angle_rate + sampled_steering_angle_rate_changed(ang_ch);
-        
-                                            %bicycle model calculations
-        
-                                            %considering rear wheel axle
-                                            %x_dot= input_vel*cos(state(i-1,3));
-                                            %y_dot= input_vel*sin(state(i-1,3));
-                                            %%rear wheel
-                                            %R= L/tan(state(i-1,4));
-                                            %omega=input_vel/R;
-                                            %theta_dot=(input_vel*tan(state(i-1,4)))/L;
-                                            %steer_dot=input_steer_angle_rate;
-                            
-                                            %considering front wheel axle
-                                            x_dot= input_velocity*cos(valid_nodes{nearest_node_id}(3)+valid_nodes{nearest_node_id}(4));
-                                            y_dot= input_velocity*sin(valid_nodes{nearest_node_id}(3)+valid_nodes{nearest_node_id}(4));
-                                            %front wheel
-                                            R=L/sin(valid_nodes{nearest_node_id}(4));
-                                            omega=input_velocity/R;
-                                            theta_dot=(input_velocity*sin(valid_nodes{nearest_node_id}(4)))/L;
-                                            steer_dot=input_steer_angle_rate;
-                                            
-                                            
-                                            x_next=valid_nodes{nearest_node_id}(1) + x_dot*delta_t;
-                                            y_next=valid_nodes{nearest_node_id}(2) + y_dot*delta_t;
-                                            theta_next=valid_nodes{nearest_node_id}(3) + theta_dot*delta_t;
-                                            steer_next=valid_nodes{nearest_node_id}(4) + steer_dot*delta_t;
-                                            states(itss,:)=[x_next y_next theta_next steer_next];
-                                            itss=itss+1;
-                                        end
-                                    end
-        
-                                    %sort as per dist from target_x,
-                                    %target_y
-                                    nodelist = [];
-                                    min_dist_list=[];
-                                    for itss = 1:100 
-                                        
-                                        
-                                             node=states(itss,:);
-                                             %node_y=valid_nodes_list(i,2);
-                                             dist=dist_func(veh_obj, node(1), node(2), target_x, target_y);
-                                        
-                                             nodelist(end+1)=dist;
-                                             min_dist_list(end+1)=i;               
-                                
-                                   end                             
-                                   [out, sorted_idx_list] = sort(nodelist);
-                                                                     
-                                    
-                                    for itss = 1:100
-                                            %if the node already doesnt exist then consider
-                                            %it for adding - takes care of the DS being a
-                                            %tree instead of a graph95701344014
-                                            idx = sorted_idx_list(itss);
-                                            curr_state = states(idx,:);
-                                            considered_x = curr_state(1);
-                                            considered_y = curr_state(2);
-                                            considered_head = curr_state(3);
-                                            considered_steer = curr_state(4);
-                                    
-                                            index=0;
-                                            for n=1:length(valid_nodes)
-                                                if considered_x == valid_nodes{n}(1) && considered_y == valid_nodes{n}(2)
-                                                    index=n;
-                                                    break;
-                                                end
-                                            end
-                                    
-                                            if index == 0
-                                                min_dist_ =1000;
-                                                flag_distant_from_other_points = 1;
-                                                for n = 1:length(valid_nodes)
-                                                    dist_from_n = dist_func(veh_obj,considered_x, considered_y, ...
-                                                        valid_nodes{n}(1), valid_nodes{n}(2));
-                                                    if dist_from_n < min_dist_
-                                                        min_dist_= dist_from_n;
-                                                    end
-                                                    if dist_from_n <= threshold_dist_from_other_points
-                                                        flag_distant_from_other_points = 0;
-
-                                                    end
-            
-                                                end
-                                              if flag_distant_from_other_points ==0 
-            
-                                                disp("distance from other nodes very less")  
-                                              else
-                                                disp("min_dist="+string(min_dist_))
-                                              end
-                                            end    
-
-                                            if flag_distant_from_other_points == 1
-                                            %if ismember([target_x target_y], valid_nodes) == false
-                                               %if target point inside road -> this is the next
-                                                %waypoint
-                                                %else discard this point and sample again
-                                                [validity_flag, corresp_road_block]=find_if_target_node_valid(veh_obj, considered_x, considered_y, border_1, border_2,block_threshold, valid_nodes{nearest_node_id}(5));
-                                                if validity_flag == true
-                                                    disp("New point found at block ="+string(corresp_road_block))
-                                                    valid_nodes{end+1} = [considered_x considered_y considered_head considered_steer corresp_road_block];
-                                                    if last_road_block<corresp_road_block
-                                                        last_road_block = corresp_road_block;
-                                                    end
-        
-                                                    %tree(nearest_node_id) = length(valid_nodes);
-                                                    tree =[tree; [nearest_node_id length(valid_nodes)]];
+                % if veh_id ==1
+                %  centre_line=(new_border_1 + new_border_2)/2.0;
+                %  outer_border=border_2;
+                %  border_2 = centre_line;
+                % else
+                %  centre_line=(new_border_1 + new_border_2)/2.0;
+                %  outer_border=border_1;
+                %  border_1 = centre_line;
+                % 
+                % end
                 
-                                                    node_x=[];
-                                                    node_y=[];
-                                                    for l=1:length(valid_nodes)
-                                                         node_x(end+1)=valid_nodes{l}(1);
-                                                         node_y(end+1)=valid_nodes{l}(2);
-                                                    end
-                                    
-                                                    scatter(border_1(:,1), border_1(:,2), 'red', "filled");
-                                                    hold on 
-                                                    scatter(border_2(:,1), border_2(:,2), 'red', "filled");
-                                                    hold on
-                                                    scatter(node_x, node_y, 'blue', "filled");
-                                                    saveas(gcf,'imgs/trial/'+string(length(valid_nodes)) + '.png')
-                                                    close
-                                                    break
-                                                end
-                                            
-                                            %check dist from each node <0.5/1.0    
-                                            end
-                                            %might need to break here for
-                                            %100 sampled points
+                heading_diff=0;
+                second = border_1(2,:);
+                first = border_1(1,:);       
+                prev=(atan2((second(2)-first(2)),(second(1)-first(1)))); 
+                for ii=2:length(border_1)-1
+                    second = border_1(ii+1,:);
+                    first = border_1(ii,:);       
+                    curr=(atan2((second(2)-first(2)),(second(1)-first(1))));
+                    heading_diff=[heading_diff;(curr-prev)];
+                    disp(curr-prev);
+                    prev=curr;
+        
+                end
+        
+                %dist_from_block_end=1.0;
+               
+                %multi_Agent
+                border_1_init = border_1(1,:);
+                border_2_init = border_2(1,:);
+                for p = 1:num_paths
 
-                                        end
-                                   
-                                end
-                           % end
-
-                        end
-
-
-           end
-           
-           node_x=[];
-           node_y=[];
-           for l=1:length(valid_nodes)
-                node_x(end+1)=valid_nodes{l}(1);
-                node_y(end+1)=valid_nodes{l}(2);
-           end
-
-           scatter(border_1(:,1), border_1(:,2), 'red', "filled");
-           hold on 
-           scatter(border_2(:,1), border_2(:,2), 'red', "filled");
-           hold on
-           %lane1
-           scatter(outer_border(:,1), outer_border(:,2), 'red', "filled");
-           hold on
-           scatter(node_x, node_y, 'blue', "filled");
-           close
-
-           
-
-           %pi=2;
-           
+                     dist_of_new_node=1.0;%3.0; %3.0;
+                     %current_road_block=1;
+                     %tree=dictionary;
+                     tree = [];
+             
+                     second = border_1(2,:);
+                     first = border_1(1,:);
+                     heading_last_road = atan2((second(2)-first(2)),(second(1)-first(1)));
+     
+                     flag_distant_from_other_points = 0;
+                     threshold_dist_from_other_points = 0.5;%1.0;%1.0;%1.0;
+                     block_threshold = 1;%6; %with dist = 1.0, this val = 6
+                     knn=20;
+                     velocity_change_threshold = 5.4;%20km/hr 2.7; % 10km/hr per frame
+                     steer_angle_rate_change_threshold = 0.17;%0.1;%5 degree, prev = 1.0; % 0.5 radian = 30 degrees % 0.17; %10 degrees in radians
+                     init_velocity = 16.8;%5.6;%40km/hr prev=0.2;% working 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 maikm/hr
+                     init_steer_angle_rate = 0.0; % driving straight
+                     L=1.5;%mts, prev = 0.5;
+                     delta_t=0.1;%0.01;%in secs, prev=3.0;
 
 
+                    x_init = border_1_init(1) +p*( border_2_init(1) - border_1_init(1))/num_paths ;
+                    y_init = border_1_init(2) -p*( border_1_init(2) -border_2_init(2))/num_paths ;
+                    disp("p="+ string(p)+", x,y="+string(x_init)+","+string(y_init));
+                    valid_nodes={[x_init -31.5 heading_last_road 0.01 1]};%{[-157 -31.5 1.00 0.01 1]};
+                    % if veh_id ==1
+                    %  valid_nodes={[-162.3 -29 heading_last_road 0.01 1]};%{[-160 -28.2 1.05 0.01 1]}; % [x y heading steering_angle blockid] and -pi/5 = -0.63 = 36 degrees % 60 degrees = 1.05
+                    % else
+                    %  valid_nodes={[-157 -31.5 heading_last_road 0.01 1]};%{[-157 -31.5 1.00 0.01 1]};
+                    % end
+                    
+            
+                    corresp_road_block = 1;
+                    frame = 0;
+                    last_road_block = 1;
+                    
+                    num_goal=0;
+                    while num_goal <=5
+                    %while last_road_block<length(border_1)-block_threshold
+                        %prev_heading = heading_last_road;
+                         frame=frame+1;
+                         disp("p="+ string(p)+", frame=" + string(frame));
+                        %disp(current_road_block);
+                        %sample a
+                         rng('shuffle')
+                         % sampled_x=normrnd(-150, 150);%-240+ ((-40)-(-240))*rand; %((-300)+rand*(300-(-300)));
+                         % sampled_y=normrnd(-50, 70);%-90 + ((-20)-(-90))*rand; %((-300)+rand*(300-(-300));
+                         sampled_x=-300+ ((50)-(-300))*rand; %((-300)+rand*(300-(-300)));
+                         sampled_y=-180 + ((-20)-(-180))*rand; %((-300)+rand*(300-(-300));
+                    
+                    
+                    
+                        %Find if the point's distance id < delta_distance=1.0
+                                 [nearest_node_list, dist_list] = find_k_nearest_node_in_tree(veh_obj, valid_nodes, sampled_x, sampled_y,knn);
+                                 flag_find_new_node =0;
+                                 %[nearest_node_id, dist_from_curr_state]=find_nearest_node_in_tree(veh_obj, valid_nodes, sampled_x, sampled_y);
+                                 for nn = 1:length(nearest_node_list)
+                                 %dist_from_curr_state=dist_func(veh_obj, state(end,1), state(end,2), sampled_x, sampled_y);
+                                     nearest_node_id = nearest_node_list(nn);
+                                     dist_from_curr_state = dist_list(nn);
+                                     % disp(["checking with nearest neighbor",num2str(nn)])
+                                     %if yes -> this is the next way point
+                                     %if dist_from_curr_state<=dist_of_new_node %1.5=theshold distance to create node
+                                     %    %do nothing
+%           
+                                     %    %target_x = sampled_x;
+                                     %    %target_y= sampled_y;
+    %%          
+                                     %    %%shilpa- fix to get whole row
+                                     %    %start_node = valid_nodes(nearest_node_id);
+                                     %
+                                     %% if no, find target point connecting the current
+                                     %% state and sampled state
+                                     %else
+                                         start_node = valid_nodes(nearest_node_id);
+                                         [target_x,target_y] = find_target_point(veh_obj, start_node{end}(1), start_node{end}(2), sampled_x, sampled_y,dist_of_new_node);
+                                         target_x=double(target_x);
+                                         target_y=double(target_y);
+                
+                                         if (target_x ~= -1) || (target_y ~= -1)
+            
+                                             %if last_road_block >1
+                                             % last = border_1(last_road_block+1,:);
+                                             % prev = border_1(last_road_block,:);
+                                             % heading_last_road = atan2((last(2)-prev(2)),(last(1)-prev(1)));
+                                             % diff=heading_last_road - prev_heading;
+                                             % if diff ~=0
+                                             %     sampled_steering_angle_rate_changed = diff;
+                                             % else
+                                             %     sampled_steering_angle_rate_changed = 0.17;
+                                             % end
+                                             % prev_heading = heading_last_road;
+                                             %end
+            
+                                             prev_heading = start_node{1}(3);
+                                             blockid = start_node{1}(5);
+                                             block_heading = atan2((border_1(blockid+1,2)- border_1(blockid,2)),(border_1(blockid+1,1)- border_1(blockid,1)));
+            
+            
+                                             %sampled points and bicycle model
+                                             sampled_steering_angle_rate_changed = zeros(1,10);
+                                             sampled_velocity_change = zeros(1,10);
+                    
+                                             %rng('default')
+                                             % if abs(block_heading - prev_heading) <=0.001
+                                             %     steer_angle_rate_change_threshold=0;%*ones(1,10);%normrnd(0, 0.001, [1,10]);
+                                             % else
+                                             %     steer_angle_rate_change_threshold = (block_heading - prev_heading)*(-1);%*ones(1,10);
+                                             % end
+            
+                                             % if frame>=5 %&& abs(block_heading - prev_heading)<=0.001
+                                             %     steer_angle_rate_change_threshold = 0.5;%5*(block_heading - prev_heading);
+                                             %     sampled_steering_angle_rate_changed = -0.5+ ((0.5)-(-0.5))*rand(1,10);%normrnd(steer_angle_rate_change_threshold, 0.2, [1,10]);
+                                             %     frame =0;                                   
+                                             % else
+                                                 steer_angle_rate_change_threshold =0.01;
+                                                 rng('shuffle')
+                                                 if abs(heading_diff(start_node{1}(5)))>0.01%0.01
+                                                 %if abs(start_node{1}(5)) > 0.01
+                                                     sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 1.0, [1,10]);
+                                                 else
+                                                     sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.5, [1,10]);
+                                                 end
+                                                     % sampled_steering_angle_rate_changed= -0.5+ ((0.5)-(-0.5))*rand(1,10);
+                                                 % end
+                    
+                                             %sampled_steering_angle_rate_changed = normrnd(steer_angle_rate_change_threshold, 0.001, [1,10]);
+                    
+                                             sampled_velocity_change=normrnd(velocity_change_threshold, 2.7, [1,10]);
+                    
+                                             % for ss = 1:10
+                                             % sampled_steering_angle_rate_changed(ss)=((-1)*steer_angle_rate_change_threshold)+ (steer_angle_rate_change_threshold-((-1)*steer_angle_rate_change_threshold))*rand; % 30 degrees
+                                             % sampled_velocity_change(ss)=((-1)*velocity_change_threshold) + (velocity_change_threshold-((-1)*velocity_change_threshold))*rand; %10 km/hr change
+                                             % end
+            
+                                             %calculating current inputs to model
+                                             %based on change
+                                             states = zeros(100,4);
+                                             itss=1;
+                                             for ang_ch = 1:10
+                                                 for vel_ch = 1:10
+                                                     input_velocity = init_velocity + sampled_velocity_change(vel_ch);
+                                                     input_steer_angle_rate = init_steer_angle_rate + sampled_steering_angle_rate_changed(ang_ch);
+                    
+                                                     %bicycle model calculations
+                    
+                                                     %considering rear wheel axle
+                                                     %x_dot= input_vel*cos(state(i-1,3));
+                                                     %y_dot= input_vel*sin(state(i-1,3));
+                                                     %%rear wheel
+                                                     %R= L/tan(state(i-1,4));
+                                                     %omega=input_vel/R;
+                                                     %theta_dot=(input_vel*tan(state(i-1,4)))/L;
+                                                     %steer_dot=input_steer_angle_rate;
+                    
+                                                     %considering front wheel axle
+                                                     x_dot= input_velocity*cos(valid_nodes{nearest_node_id}(3)+valid_nodes{nearest_node_id}(4));
+                                                     y_dot= input_velocity*sin(valid_nodes{nearest_node_id}(3)+valid_nodes{nearest_node_id}(4));
+                                                     %front wheel
+                                                     R=L/sin(valid_nodes{nearest_node_id}(4));
+                                                     omega=input_velocity/R;
+                                                     theta_dot=(input_velocity*sin(valid_nodes{nearest_node_id}(4)))/L;
+                                                     steer_dot=input_steer_angle_rate;
+                    
+                    
+                                                     x_next=valid_nodes{nearest_node_id}(1) + x_dot*delta_t;
+                                                     y_next=valid_nodes{nearest_node_id}(2) + y_dot*delta_t;
+                                                     theta_next=valid_nodes{nearest_node_id}(3) + theta_dot*delta_t;
+                                                     steer_next=valid_nodes{nearest_node_id}(4) + steer_dot*delta_t;
+                                                     states(itss,:)=[x_next y_next theta_next steer_next];
+                                                     itss=itss+1;
+                                                 end
+                                             end
+                    
+                                             %sort as per dist from target_x,
+                                             %target_y
+                                             nodelist = [];
+                                             min_dist_list=[];
+                                             for itss = 1:100 
+                    
+                    
+                                                      node=states(itss,:);
+                                                      %node_y=valid_nodes_list(i,2);
+                                                      dist=dist_func(veh_obj, node(1), node(2), target_x, target_y);
+                    
+                                                      nodelist(end+1)=dist;
+                                                      min_dist_list(end+1)=i;               
+                    
+                                            end                             
+                                            [out, sorted_idx_list] = sort(nodelist);
+                    
+                    
+                                             for itss = 1:100
+                                                     %if the node already doesnt exist then consider
+                                                     %it for adding - takes care of the DS being a
+                                                     %tree instead of a graph95701344014
+                                                     idx = sorted_idx_list(itss);
+                                                     curr_state = states(idx,:);
+                                                     considered_x = curr_state(1);
+                                                     considered_y = curr_state(2);
+                                                     considered_head = curr_state(3);
+                                                     considered_steer = curr_state(4);
+                    
+                                                     index=0;
+                                                     for n=1:length(valid_nodes)
+                                                         if considered_x == valid_nodes{n}(1) && considered_y == valid_nodes{n}(2)
+                                                             index=n;
+                                                             break;
+                                                         end
+                                                     end
+                    
+                                                     flag_distant_from_other_points = 0;
+                                                     if index == 0
+                                                         min_dist_ =1000;
+                                                         flag_distant_from_other_points = 1;
+                                                         for n = 1:length(valid_nodes)
+                                                             dist_from_n = dist_func(veh_obj,considered_x, considered_y, ...
+                                                                 valid_nodes{n}(1), valid_nodes{n}(2));
+                                                             if dist_from_n < min_dist_
+                                                                 min_dist_= dist_from_n;
+                                                             end
+                                                             if dist_from_n <= threshold_dist_from_other_points
+                                                                 flag_distant_from_other_points = 0;
+            
+                                                             end
+            
+                                                         end
+                                                       if flag_distant_from_other_points ==0 
+    
+                                                         disp("distance from other nodes very less")  
+                                                       else
+                                                         disp("min_dist="+string(min_dist_))
+                                                       end
+                                                     end
+            
+                                                     % scatter(border_1(:,1), border_1(:,2), 5,'red', "filled");
+                                                     % hold on 
+                                                     % scatter(border_2(:,1), border_2(:,2), 5,'red', "filled");
+                                                     % hold on
+                                                     % scatter([valid_nodes{1}(1)], [valid_nodes{1}(2)],5, 'green', "filled");
+                                                     % hold on
+                                                     % scatter([considered_x], [considered_y], 5,'blue', "filled");
+                                                     % %saveas(gcf,'imgs/trial/'+string(length(valid_nodes)) + '.png')
+                                                     % close
+                                                     % % break
+            
+                                                     if flag_distant_from_other_points == 1
+                                                     %if ismember([target_x target_y], valid_nodes) == false
+                                                        %if target point inside road -> this is the next
+                                                         %waypoint
+                                                         %else discard this point and sample again
+                                                         [validity_flag, corresp_road_block]=find_if_target_node_valid(veh_obj, considered_x, considered_y, border_1, border_2,block_threshold, valid_nodes{nearest_node_id}(5));
+                                                         if validity_flag == true
+                                                             disp("New point found at block ="+string(corresp_road_block))
+                                                             valid_nodes{end+1} = [considered_x considered_y considered_head considered_steer corresp_road_block];
+                                                             if last_road_block<corresp_road_block
+                                                                 last_road_block = corresp_road_block;
+                                                             end
+                                                             if last_road_block==length(border_1) -block_threshold
+                                                                 num_goal=num_goal+1;
+                                                             end
+                    
+                                                             %tree(nearest_node_id) = length(valid_nodes);
+                                                             tree =[tree; [nearest_node_id length(valid_nodes)]];
+                    
+                                                             node_x=[];
+                                                             node_y=[];
+                                                             for l=1:length(valid_nodes)
+                                                                  node_x(end+1)=valid_nodes{l}(1);
+                                                                  node_y(end+1)=valid_nodes{l}(2);
+                                                             end
+                    
+                                                             scatter(border_1(:,1), border_1(:,2),5, 'red', "filled");
+                                                             hold on 
+                                                             scatter(border_2(:,1), border_2(:,2),5, 'red', "filled");
+                                                             hold on
+                                                             scatter(node_x, node_y, 5, 'blue', "filled");
+                                                             saveas(gcf,'imgs/trial/path'+string(p)+'_'+string(length(valid_nodes)) + '.png')
+                                                             close
+                                                             flag_find_new_node=1;
+                                                             break
+                                                         end
+                    
+                                                     %check dist from each node <0.5/1.0    
+                                                     end
+                                                     %might need to break here for
+                                                     %100 sampled points
+            
+                                                 end
+                    
+                                         end
+                                         if flag_find_new_node == 1
+                                             break
+                                         end
+            
+                                    % end
+            
+                                 end
+            
+            
+                    end
+    
+    
+                    
+                    node_x=[];
+                    node_y=[];
+                    for l=1:length(valid_nodes)
+                         node_x(end+1)=valid_nodes{l}(1);
+                         node_y(end+1)=valid_nodes{l}(2);
+                    end
+            
+                    scatter(border_1(:,1), border_1(:,2), 'red', "filled");
+                    hold on 
+                    scatter(border_2(:,1), border_2(:,2), 'red', "filled");
+                    hold on
+                    %lane1
+                    %scatter(outer_border(:,1), outer_border(:,2), 'red', "filled");
+                    %hold on
+                    scatter(node_x, node_y, 'blue', "filled");
+                    close
+                
+                pi = 2;
+                
+                filename = 'imgs/tree/path_'+string(p)+'.mat' ;
+                save(filename,"valid_nodes","tree")
+                
 
-       end
+                % results{p} = valid_nodes;
+                % tree_all = [tree_all; tree];
+                end   
 
+          pi=2;
+
+           % [results{p}, tree ]= function_sample(veh_obj,border_1, border_2, p, num_paths);
+           % tree_all=[tree_all; tree];
+      
+        end
+        
+      
        function waypoint_idx = find_path(veh_obj,scenario, tree, tree_nodes, veh_id)
             
 
@@ -561,8 +695,8 @@ classdef Vehicle
             node_x=[];
             node_y=[];
             for i = 1: length(waypoint_idx)
-                node_x=[node_x; tree_nodes{waypoint_idx(i)}(1)]
-                node_y=[node_y; tree_nodes{waypoint_idx(i)}(2)]
+                node_x=[node_x; tree_nodes{waypoint_idx(i)}(1)];
+                node_y=[node_y; tree_nodes{waypoint_idx(i)}(2)];
             end
 
             centers = scenario.RoadSpecifications.Centers;
@@ -639,8 +773,11 @@ classdef Vehicle
            laneSpecification = lanespec([1 1]);
            road(new_scenario_obj, scenario.RoadSpecifications.Centers, 'Lanes', laneSpecification, 'Name', 'Apple Hill Drive');
            rbScenario = roadBoundaries(new_scenario_obj);
+           
+           num_paths = 10;
+           %[tree, tree_nodes]=sampled_scenario(veh_obj, scenario, veh_id, num_paths);
+           sampled_scenario(veh_obj, scenario, veh_id, num_paths);
 
-           %[tree, tree_nodes]=sampled_scenario(veh_obj, scenario, veh_id);
            if veh_id ==1
                 tree = load ("RRT_6_tree_veh1.mat").tree;
                 tree_nodes = load("RRT_6_nodes_veh1.mat").valid_nodes;
