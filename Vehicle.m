@@ -214,13 +214,42 @@ classdef Vehicle
 
             end
 
-            function [valid_nodes, tree] = function_sample(veh_obj,border_1, border_2,p, num_paths)
-                disp("inside "+ string(p))
-                %global last_road_block;
-               
 
+            function [sampled_x, sampled_y] = find_temporary_goal(veh_obj, random_block_id, border_1, border_2)
+                b1_first = border_1(random_block_id,:);
+                b1_next = border_1(random_block_id+1,:);
+                b2_first = border_2(random_block_id,:);
+                b2_next = border_2(random_block_id+1,:);
 
+                all_x = [b1_first(1) b2_first(1) b1_next(1) b2_next(1)];
+                all_y = [b1_first(2) b2_first(2) b1_next(2) b2_next(2)];
+                [min_x, max_x] = bounds(all_x);
+                [min_y, max_y] = bounds(all_y);
 
+                rng('shuffle')
+                sampled_x=normrnd((min_x+max_x)/2.0, (max_x-min_x)/2.0);%((-300)+rand*(300-(-300)));
+                sampled_y=normrnd((min_y+max_y)/2.0, (max_y-min_y)/2.0);
+            
+
+                
+                % heading = atan2((b1_next(2)-b1_first(2)),(b1_next(1)-b1_first(1)));
+                % % rng('shuffle');
+                % if heading < -1.31 
+                %      rng('shuffle')
+                %     sampled_x=normrnd((min_x+max_x)/2.0, (max_x-min_x+40));%((-300)+rand*(300-(-300)));
+                %     sampled_y=normrnd((min_y+max_y)/2.0, (max_y-min_y+10));
+                % 
+                % elseif heading <0.53
+                %      rng('shuffle')
+                %     sampled_x=normrnd((min_x+max_x)/2.0, (max_x-min_x+10));%((-300)+rand*(300-(-300)));
+                %     sampled_y=normrnd((min_y+max_y)/2.0, (max_y-min_y+10));
+                % else
+                %      rng('shuffle')
+                %     sampled_x=normrnd((min_x+max_x)/2.0, (max_x-min_x+10));
+                %     sampled_y=normrnd((min_y+max_y)/2.0, (max_y-min_y+40));%-180 + ((-20)-(-180))*rand; %((-300)+rand*(300-(-300)); 
+                % end
+                % sampled_x=min_x-20.0+ ((max_x+20.0)-(min_x-20.0))*rand; %((-300)+rand*(300-(-300)));
+                % sampled_y=min_y + ((max_y)-(min_y))*rand;%-180 + ((-20)-(-180))*rand; %((-300)+rand*(300-(-300)); 
             end
 
        function [tree, valid_nodes]=sampled_scenario(veh_obj, scenario, veh_id, num_paths)
@@ -290,9 +319,9 @@ classdef Vehicle
                 %multi_Agent
                 border_1_init = border_1(1,:);
                 border_2_init = border_2(1,:);
-                for p = 1:num_paths
+                for p = 6:num_paths
 
-                     dist_of_new_node=1.0;%3.0; %3.0;
+                     dist_of_new_node=7.0;%3.0; %3.0;
                      %current_road_block=1;
                      %tree=dictionary;
                      tree = [];
@@ -304,10 +333,10 @@ classdef Vehicle
                      flag_distant_from_other_points = 0;
                      threshold_dist_from_other_points = 0.5;%1.0;%1.0;%1.0;
                      block_threshold = 1;%6; %with dist = 1.0, this val = 6
-                     knn=20;
+                     knn=50;
                      velocity_change_threshold = 5.4;%20km/hr 2.7; % 10km/hr per frame
                      steer_angle_rate_change_threshold = 0.17;%0.1;%5 degree, prev = 1.0; % 0.5 radian = 30 degrees % 0.17; %10 degrees in radians
-                     init_velocity = 16.8;%5.6;%40km/hr prev=0.2;% working 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 maikm/hr
+                     init_velocity = 11.2;%16.8;%5.6;%40km/hr prev=0.2;% working 1.0; % 100 km/h = 27.8 m/s; 12.5; %45 maikm/hr
                      init_steer_angle_rate = 0.0; % driving straight
                      L=1.5;%mts, prev = 0.5;
                      delta_t=0.1;%0.01;%in secs, prev=3.0;
@@ -316,7 +345,9 @@ classdef Vehicle
                     x_init = border_1_init(1) +p*( border_2_init(1) - border_1_init(1))/num_paths ;
                     y_init = border_1_init(2) -p*( border_1_init(2) -border_2_init(2))/num_paths ;
                     disp("p="+ string(p)+", x,y="+string(x_init)+","+string(y_init));
-                    valid_nodes={[x_init -31.5 heading_last_road 0.01 1]};%{[-157 -31.5 1.00 0.01 1]};
+                    rng('shuffle')
+                    head_err = -0.17+ ((0.17)-(-0.17))*rand;
+                    valid_nodes={[x_init y_init-0.1 heading_last_road+head_err 0.01 1]};%{[-157 -31.5 1.00 0.01 1]};
                     % if veh_id ==1
                     %  valid_nodes={[-162.3 -29 heading_last_road 0.01 1]};%{[-160 -28.2 1.05 0.01 1]}; % [x y heading steering_angle blockid] and -pi/5 = -0.63 = 36 degrees % 60 degrees = 1.05
                     % else
@@ -336,12 +367,24 @@ classdef Vehicle
                          disp("p="+ string(p)+", frame=" + string(frame));
                         %disp(current_road_block);
                         %sample a
-                         rng('shuffle')
-                         % sampled_x=normrnd(-150, 150);%-240+ ((-40)-(-240))*rand; %((-300)+rand*(300-(-300)));
-                         % sampled_y=normrnd(-50, 70);%-90 + ((-20)-(-90))*rand; %((-300)+rand*(300-(-300));
-                         sampled_x=-300+ ((50)-(-300))*rand; %((-300)+rand*(300-(-300)));
-                         sampled_y=-180 + ((-20)-(-180))*rand; %((-300)+rand*(300-(-300));
-                    
+                        
+                         % sampled_x=normrnd(-150, 100);%-240+ ((-40)-(-240))*rand; %((-300)+rand*(300-(-300)));
+                         % sampled_y=normrnd(-70, 50);%-90 + ((-20)-(-90))*rand; %((-300)+rand*(300-(-300));
+                         % width_of_search = length(border_1) - 1-last_road_block;
+                        
+                         % if length(border_1) - last_road_block >=5
+                         %      rng('shuffle')
+                         %    random_block_id = randi(5);
+                         % else
+                         %     random_block_id = length(border_1) - last_road_block;
+                         % end
+                         % random_block_id = last_road_block+random_block_id ;
+                         rng('shuffle');
+                         random_block_id = randi(length(border_1)-1);
+                         disp('block temp goal='+string(random_block_id));
+                         [sampled_x, sampled_y] = find_temporary_goal(veh_obj, random_block_id, border_1, border_2);
+
+                                      
                     
                     
                         %Find if the point's distance id < delta_distance=1.0
@@ -407,16 +450,33 @@ classdef Vehicle
                                              %     sampled_steering_angle_rate_changed = -0.5+ ((0.5)-(-0.5))*rand(1,10);%normrnd(steer_angle_rate_change_threshold, 0.2, [1,10]);
                                              %     frame =0;                                   
                                              % else
-                                                 steer_angle_rate_change_threshold =0.01;
+                                                % if mod(frame,2)==0
+                                                %     steer_angle_rate_change_threshold=0.01;
+                                                % else
+                                                %     steer_angle_rate_change_threshold = -0.01;
+                                                % end
+                                                 % steer_angle_rate_change_threshold =(-0.001)+(0.001 -(-0.001))*rand;
                                                  rng('shuffle')
-                                                 if abs(heading_diff(start_node{1}(5)))>0.01%0.01
-                                                 %if abs(start_node{1}(5)) > 0.01
-                                                     sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 1.0, [1,10]);
-                                                 else
-                                                     sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.5, [1,10]);
-                                                 end
-                                                     % sampled_steering_angle_rate_changed= -0.5+ ((0.5)-(-0.5))*rand(1,10);
-                                                 % end
+                                                 %if mod(frame, 3) ==0
+                                                    if abs(heading_diff(start_node{1}(5)))>0.05%0.01
+                                                    %if abs(start_node{1}(5)) > 0.01
+                                                        % sampled_steering_angle_rate_changed =(-0.9) +(0.9-(-0.9))*rand(1,10);
+                                                        sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.7, [1,10]);
+                                                    % elseif abs(heading_diff(start_node{1}(5)))>0.03%0.01
+                                                    % 
+                                                    %     sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.9, [1,10]);
+                                                    elseif abs(heading_diff(start_node{1}(5)))>0.01%0.01
+                                                    % %if abs(start_node{1}(5)) > 0.01
+                                                        % sampled_steering_angle_rate_changed =(-0.75) +(0.75-(-0.75))*rand(1,10);
+                                                        sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.6, [1,10]);
+                                                    else
+                                                        % sampled_steering_angle_rate_changed =(-0.5) +(0.5-(-0.5))*rand(1,10);
+                                                        sampled_steering_angle_rate_changed =normrnd(steer_angle_rate_change_threshold, 0.5, [1,10]);
+                                                    end
+                                                 % else
+                                                 %     sampled_steering_angle_rate_changed = normrnd(steer_angle_rate_change_threshold, 0.1, [1,10]);
+                                                 %     % sampled_steering_angle_rate_changed= -0.5+ ((0.5)-(-0.5))*rand(1,10);
+                                                 %  end
                     
                                              %sampled_steering_angle_rate_changed = normrnd(steer_angle_rate_change_threshold, 0.001, [1,10]);
                     
@@ -519,13 +579,13 @@ classdef Vehicle
                                                              end
             
                                                          end
-                                                       if flag_distant_from_other_points ==0 
-    
-                                                         disp("distance from other nodes very less")  
-                                                       else
-                                                         disp("min_dist="+string(min_dist_))
-                                                       end
-                                                     end
+                                                     %   if flag_distant_from_other_points ==0 
+                                                     % 
+                                                     %     disp("distance from other nodes very less")  
+                                                     %   else
+                                                     %     disp("min_dist="+string(min_dist_))
+                                                     %   end
+                                                      end
             
                                                      % scatter(border_1(:,1), border_1(:,2), 5,'red', "filled");
                                                      % hold on 
