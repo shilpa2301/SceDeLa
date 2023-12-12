@@ -646,7 +646,7 @@ classdef Vehicle
                                                              % hold on
                                                              % scatter(considered_x, considered_y, 10, 'blue', "filled");
                     
-                                                             close;
+                                                             %close;
                                                              if validity_flag == true
                                                                  disp("New point found at block ="+string(corresp_road_block))
                                                                  lane_id = find_lane(veh_obj, considered_x, considered_y, corresp_road_block, border_1, border_2, centre_line);
@@ -712,13 +712,13 @@ classdef Vehicle
                         scatter(border_2(:,1), border_2(:,2),5, 'red', "filled");
                         hold on
                         scatter(node_x, node_y, 5, 'blue', "filled");
-                        saveas(gcf,'imgs/trial/run5_path'+string(p)+'_'+string(length(valid_nodes)) + '.png')
+                        saveas(gcf,'imgs/trial/run8_path'+string(p)+'_'+string(length(valid_nodes)) + '.png')
                         close
                         disp("Image stored")
                     
                     pi = 2;
                     
-                    filename = 'imgs/tree/run6_path_'+string(p)+'round_'+string(round)+'.mat' ;
+                    filename = 'imgs/tree/run8_path_'+string(p)+'round_'+string(round)+'.mat' ;
                     save(filename,"valid_nodes","tree")
                     
         
@@ -880,16 +880,20 @@ classdef Vehicle
            rbScenario = roadBoundaries(new_scenario_obj);
            
            num_paths = 10;
-           %[tree, tree_nodes]=sampled_scenario(veh_obj, scenario, veh_id, num_paths);
-           sampled_scenario(veh_obj, scenario, veh_id, num_paths);
+           
+           %sampled_scenario(veh_obj, scenario, veh_id, num_paths);
 
-           if veh_id ==1
-                tree = load ("RRT_6_tree_veh1.mat").tree;
-                tree_nodes = load("RRT_6_nodes_veh1.mat").valid_nodes;
-           else
-                tree = load ("RRT_6_tree_veh2.mat").tree;
-                tree_nodes = load("RRT_6_nodes_veh2.mat").valid_nodes;
-           end
+           % if veh_id ==1
+           %      tree = load ("imgs/tree/path1round_1.mat").tree;
+           %      tree_nodes = load("RRT_6_nodes_veh1.mat").valid_nodes;
+           % else
+           %      tree = load ("RRT_6_tree_veh2.mat").tree;
+           %      tree_nodes = load("RRT_6_nodes_veh2.mat").valid_nodes;
+           % end
+
+           tree = load ("imgs/tree/path_1round_1.mat").tree;
+           tree_nodes = load("imgs/tree/path_1round_1.mat").valid_nodes;
+
            waypoint_idx = find_path(veh_obj, scenario, tree, tree_nodes, veh_id);
            
 
