@@ -48,13 +48,13 @@ A. Running Code to generate instances:
    2. Run main.py with correct file names
 
 
-This work is published at Runtime Verification 2023. If you are referring to this work, please cite:
+This work is published at Runtime Verification 2023 [https://link.springer.com/chapter/10.1007/978-3-031-74234-7_5]. If you are referring to this work, please cite:
 
-@inproceedings{kudalkar2024sampling,
-  title={Sampling-Based and Gradient-Based Efficient Scenario Generation},
-  author={Kudalkar, Vidisha and Hashemi, Navid and Mukhopadhyay, Shilpa and Mallick, Swapnil and Budnik, Christof and Nagaraja, Parinitha and Deshmukh, Jyotirmoy V},
-  booktitle={International Conference on Runtime Verification},
-  pages={70--88},
-  year={2024},
-  organization={Springer}
-}
+   @inproceedings{kudalkar2024sampling,
+       title={Sampling-Based and Gradient-Based Efficient Scenario Generation},
+        author={Kudalkar, Vidisha and Hashemi, Navid and Mukhopadhyay, Shilpa and Mallick, Swapnil and Budnik, Christof and Nagaraja, Parinitha and Deshmukh, Jyotirmoy V},
+        booktitle={International Conference on Runtime Verification},
+        pages={70--88},
+        year={2024},
+        organization={Springer}
+         }
